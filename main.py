@@ -7,7 +7,7 @@ builtins.Any = typing.Any
 from fasthtml.common import *
 from supabase import create_client, Client
 
-# Add secret_key here to stop FastHTML from trying to write a file
+# Initialize FastHTML with a fixed session encryption key
 _app, _rt = fast_app(
     secret_key="some_long_secure_random_string_here_for_your_family_tree_session",
     hdrs=(
@@ -31,7 +31,7 @@ app = _app
 rt = _rt
 application = _app
 
-# --- Family Dataset ---
+# Dataset
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
     {"id": 2, "gen": 2, "name": "Songattae Linga", "parent": 1},
@@ -93,35 +93,44 @@ def get_spouses_dict():
     except Exception:
         return {}
 
+# REFACTORED: Fully native FastHTML component generation
 def generate_html_tree(parent_id, spouses):
     children = [m for m in family_data if m["parent"] == parent_id]
-    if not children: return ""
+    if not children: 
+        return None
+    
     list_items = []
     for member in children:
         spouse_name = spouses.get(member["id"], "")
-        spouse_element = Span(f" ❤️ {spouse_name}", cls="spouse-container") if spouse_name else ""
-        node = Div(
+        
+        # Build layout cleanly using lists
+        node_contents = [
             Span(f"Gen {member['gen']}", cls="gen-badge"),
-            Span(member["name"], style="font-weight:600;"),
-            spouse_element,
+            Span(member["name"], style="font-weight:600;")
+        ]
+        if spouse_name:
+            node_contents.append(Span(f" ❤️ {spouse_name}", cls="spouse-container"))
+            
+        node = Div(
+            *node_contents,
             cls="node-box",
             hx_get=f"/edit-spouse-modal/{member['id']}",
             hx_target="#modal-placeholder"
         )
-        sub_tree = generate_html_tree(member["id"], spouses)
         
-        # FIXED: Only wrap with NotStr if there is actual HTML layout string content
+        sub_tree = generate_html_tree(member["id"], spouses)
         if sub_tree:
-            list_items.append(Li(node, NotStr(sub_tree)))
+            list_items.append(Li(node, sub_tree))
         else:
             list_items.append(Li(node))
             
-    return f"<ul>{''.join([str(item) for item in list_items])}</ul>"
+    return Ul(*list_items)
 
 @rt("/")
 def get():
     spouses = get_spouses_dict()
-    tree_content = generate_html_tree(None, spouses)
+    tree_layout = generate_html_tree(None, spouses)
+    
     return Container(
         Header(
             H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
@@ -129,7 +138,7 @@ def get():
             style="background: var(--primary); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px;"
         ),
         Div(
-            Div(NotStr(tree_content), cls="tree"),
+            Div(tree_layout if tree_layout else "No family records loaded.", cls="tree"),
             style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto;"
         ),
         Div(id="modal-placeholder")
@@ -169,6 +178,5 @@ def post(member_id: int, spouse_name: str):
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
     return get()
 
-# Only run server if called locally
 if __name__ == "__main__":
     serve()
