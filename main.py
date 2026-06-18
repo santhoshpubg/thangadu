@@ -5,7 +5,7 @@ builtins.Any = typing.Any
 # ------------------------------------
 
 from fasthtml.common import *
-from starlette.responses import Response
+from starlette.responses import Response, HTMLResponse
 from supabase import create_client, Client
 
 _app, _rt = fast_app(
@@ -117,7 +117,6 @@ def generate_html_tree(parent_id, spouses):
         
         sub_children_items = generate_html_tree(member["id"], spouses)
         if len(sub_children_items) > 0:
-            # Explicitly wrapping child groups to prevent compiler evaluation issues
             list_items.append(Li(node, Ul(*sub_children_items)))
         else:
             list_items.append(Li(node))
@@ -134,8 +133,8 @@ def get():
     else:
         tree_container = Div(Ul(*tree_items), cls="tree")
         
-    # SANITIZED: Replaced Header and Container with raw layout primitives
-    return Div(
+    # Build complete HTML layout structure
+    layout = Div(
         Div(
             H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
             P("Interactive Family Lineage & Records (FastHTML Engine)"),
@@ -149,13 +148,17 @@ def get():
         cls="container",
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
+    
+    # BYPASS PIPELINE: Explicitly cast layout to string and return as an isolated Starlette HTMLResponse
+    return HTMLResponse(to_xml(layout))
 
 @rt("/edit-spouse-modal/{member_id}")
 def get_modal(member_id: int):
     member = next((m for m in family_data if m["id"] == member_id), None)
     spouses = get_spouses_dict()
     current_spouse = spouses.get(member_id, "")
-    return Div(
+    
+    modal_layout = Div(
         Div(
             H3(f"Update Spouse for {str(member['name'])}"),
             Form(
@@ -174,6 +177,8 @@ def get_modal(member_id: int):
         id="custom-modal",
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
+    
+    return HTMLResponse(to_xml(modal_layout))
 
 @rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
