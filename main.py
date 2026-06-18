@@ -1,9 +1,8 @@
 from fasthtml.common import *
 from supabase import create_client, Client
-import os
 
-# 1. Initialize FastHTML correctly for Vercel's serverless runtime
-app, rt = fast_app(
+# 1. Create a placeholder fast_app variable to unpack explicitly
+_app, _rt = fast_app(
     hdrs=(
         Script(src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"),
         Style("""
@@ -21,10 +20,13 @@ app, rt = fast_app(
     )
 )
 
-# 2. Expose the underlying ASGI app cleanly for the serverless function handler
-handler = app
+# 2. EXPLICIT DEFINITION FOR VERCEL
+# Vercel looks for a top-level global named exactly 'app' or 'application' or 'handler'
+app = _app
+rt = _rt
+application = _app  # Back up alias
 
-# Your Family Dataset (TYPO FIXED HERE: "parent": 19)
+# --- Family Dataset ---
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
     {"id": 2, "gen": 2, "name": "Songattae Linga", "parent": 1},
@@ -75,7 +77,6 @@ family_data = [
     {"id": 47, "gen": 6, "name": "Siddhesh Joghee", "parent": 46}
 ]
 
-# Configure your connection credentials
 SUPABASE_URL = "https://cyjitmzyfqmwsfbruqpf.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aml0bXp5ZnFtd3NmYnJ1cXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDUwOTAsImV4cCI6MjA5NzM4MTA5MH0.sSHvidL9ZXMbTOdnNyoCpTHAy6x_QXOnIGPoypWkI80"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -84,8 +85,7 @@ def get_spouses_dict():
     try:
         response = supabase.table("family_spouses").select("*").execute()
         return {row["member_id"]: row["spouse_name"] for row in response.data}
-    except Exception as e:
-        print(f"Database error: {e}")
+    except Exception:
         return {}
 
 def generate_html_tree(parent_id, spouses):
@@ -158,6 +158,6 @@ def post(member_id: int, spouse_name: str):
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
     return get()
 
-# 3. Only invoke local serve loop if executing file directly
+# Only run server if called locally
 if __name__ == "__main__":
     serve()
