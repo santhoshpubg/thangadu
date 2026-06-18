@@ -148,8 +148,9 @@ def get():
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
     
-    # Render using the correct fastcore serializer into an explicit HTML Response
-    return HTMLResponse(content=to_xml(layout), media_type="text/html")
+    # Force direct string conversion to get unescaped raw HTML strings
+    raw_html = f"<!DOCTYPE html><html><body>{layout}</body></html>"
+    return HTMLResponse(content=raw_html, status_code=200)
 
 @rt("/edit-spouse-modal/{member_id}")
 def get_modal(member_id: int):
@@ -177,9 +178,9 @@ def get_modal(member_id: int):
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
     
-    return HTMLResponse(content=to_xml(modal_layout), media_type="text/html")
+    return HTMLResponse(content=f"{modal_layout}", status_code=200)
     
-@rt("/save-spouse")
+@rt("/save-spouse")    
 def post(member_id: int, spouse_name: str):
     spouse_name = str(spouse_name).strip()
     if spouse_name:
