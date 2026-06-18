@@ -106,7 +106,6 @@ def generate_html_tree(parent_id, spouses):
             
     return list_items
 
-# 👇 BYPASS FASTHTML ROUTING FOR THE MAIN PAGE 👇
 @app.route("/")
 async def get_homepage(request):
     spouses = get_spouses_dict()
@@ -132,15 +131,13 @@ async def get_homepage(request):
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
     
-    # Clean injection template containing required libraries and styling
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
         <title>Thangadu Family Tree</title>
-        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://unpkg.com/htmx.org@1.9.12"></script>
         <style>
             :root {{ --primary: #1a365d; --accent: #2b6cb0; --spouse-color: #d63384; --border-color: #cbd5e0; }}
             body {{ font-family: system-ui, sans-serif; background: #f4f7f6; padding: 30px 15px; }}
@@ -149,9 +146,14 @@ async def get_homepage(request):
             .tree li::before {{ content: ""; position: absolute; top: 0; left: 0; border-left: 2px solid var(--border-color); height: 100%; }}
             .tree li::after {{ content: ""; position: absolute; top: 22px; left: 0; border-top: 2px solid var(--border-color); width: 22px; }}
             .tree li:last-child::before {{ height: 22px; }}
-            .node-box {{ display: inline-flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; cursor: pointer; }}
+            .node-box {{ display: inline-flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }}
+            .node-box:hover {{ background: #edf2f7; transform: scale(1.02); }}
             .gen-badge {{ font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-right: 8px; background: #ebf8ff; color: #2b6cb0; }}
             .spouse-container {{ color: var(--spouse-color); font-weight: 500; margin-left: 6px; }}
+            input[type="text"] {{ width: 100%; padding: 10px; margin: 15px 0; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; }}
+            button {{ padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }}
+            button[type="submit"] {{ background: var(--accent); color: white; }}
+            button.secondary {{ background: #e2e8f0; color: #4a5568; }}
         </style>
     </head>
     <body>
@@ -161,7 +163,6 @@ async def get_homepage(request):
     """
     return HTMLResponse(content=html_content, status_code=200)
 
-# 👇 BYPASS FASTHTML ROUTING FOR THE MODAL GET ROUTE 👇
 @app.route("/edit-spouse-modal/{member_id}")
 async def get_modal_view(request):
     member_id = int(request.path_params["member_id"])
@@ -173,15 +174,14 @@ async def get_modal_view(request):
         Div(
             H3(f"Update Spouse for {str(member['name'])}"),
             Form(
-                Input(type="text", name="spouse_name", value=str(current_spouse), placeholder="Enter full name"),
-                Input(type="hidden", name="member_id", value=str(member_id)), # Hidden input to carry ID
+                Input(type="text", name="spouse_name", value=str(current_spouse), placeholder="Enter spouse's name..."),
+                Input(type="hidden", name="member_id", value=str(member_id)),
                 Div(
                     Button("Cancel", type="button", onclick="document.getElementById('custom-modal').remove()", cls="secondary"),
                     Button("Save Changes", type="submit"),
                     style="display: flex; justify-content: flex-end; gap: 10px;"
                 ),
-                hx_post="/save-spouse",
-                hx_target="body"
+                hx_post="/save-spouse"
             ),
             style="background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"
         ),
@@ -190,26 +190,24 @@ async def get_modal_view(request):
     )
     return HTMLResponse(content=f"{modal_layout}", status_code=200)
 
-# 👇 NATIVE STARLETTE ROUTE TO PARSE FORM & WRITE TO SUPABASE 👇
 @app.route("/save-spouse", methods=["POST"])
 async def post_save_spouse(request):
-    # Parse the incoming form data fields directly
     form_data = await request.form()
     member_id = int(form_data.get("member_id"))
     spouse_name = str(form_data.get("spouse_name", "")).strip()
     
     if spouse_name:
-        # Upsert record if text exists
         supabase.table("family_spouses").upsert({
             "member_id": member_id, 
             "spouse_name": spouse_name
         }).execute()
     else:
-        # Clear record if field is emptied out
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
         
-    # Send a clean HTMX trigger back telling the browser window to reload the fresh tree
-    return Response("", headers={"HX-Refresh": "true"})
+    # Standard HTMX response header requesting a complete screen update
+    response = Response(status_code=200)
+    response.headers["HX-Refresh"] = "true"
+    return response
 
 if __name__ == "__main__":
     serve()
