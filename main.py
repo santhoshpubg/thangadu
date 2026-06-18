@@ -131,6 +131,9 @@ async def get_homepage(request):
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
     
+    # CRITICAL FIX: Convert layout to real, clean HTML with custom hx-* properties preserved
+    compiled_tree_html = to_xml(layout)
+    
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -157,7 +160,7 @@ async def get_homepage(request):
         </style>
     </head>
     <body>
-        {layout}
+        {compiled_tree_html}
     </body>
     </html>
     """
@@ -188,7 +191,7 @@ async def get_modal_view(request):
         id="custom-modal",
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
-    return HTMLResponse(content=f"{modal_layout}", status_code=200)
+    return HTMLResponse(content=to_xml(modal_layout), status_code=200)
 
 @app.route("/save-spouse", methods=["POST"])
 async def post_save_spouse(request):
@@ -204,7 +207,6 @@ async def post_save_spouse(request):
     else:
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
         
-    # Standard HTMX response header requesting a complete screen update
     response = Response(status_code=200)
     response.headers["HX-Refresh"] = "true"
     return response
