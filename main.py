@@ -88,11 +88,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 def get_spouses_dict():
     try:
         response = supabase.table("family_spouses").select("*").execute()
-        return {row["member_id"]: row["spouse_name"] for row in response.data}
+        return {row["member_id"]: str(row["spouse_name"]) for row in response.data}
     except Exception:
         return {}
 
-# FIXED: Returns a clean list of Li items. Never embeds a raw "None" inside a component constructor.
 def generate_html_tree(parent_id, spouses):
     children = [m for m in family_data if m["parent"] == parent_id]
     if not children: 
@@ -104,7 +103,7 @@ def generate_html_tree(parent_id, spouses):
         
         node_contents = [
             Span(f"Gen {member['gen']}", cls="gen-badge"),
-            Span(member["name"], style="font-weight:600;")
+            Span(str(member["name"]), style="font-weight:600;")
         ]
         if spouse_name:
             node_contents.append(Span(f" ❤️ {spouse_name}", cls="spouse-container"))
@@ -117,8 +116,8 @@ def generate_html_tree(parent_id, spouses):
         )
         
         sub_children_items = generate_html_tree(member["id"], spouses)
-        if sub_children_items:
-            # If sub-children exist, compile them into a Ul element inside this Li item cleanly
+        if len(sub_children_items) > 0:
+            # Explicitly wrapping child groups to prevent compiler evaluation issues
             list_items.append(Li(node, Ul(*sub_children_items)))
         else:
             list_items.append(Li(node))
@@ -130,13 +129,14 @@ def get():
     spouses = get_spouses_dict()
     tree_items = generate_html_tree(None, spouses)
     
-    if not tree_items:
+    if len(tree_items) == 0:
         tree_container = Div("No family records loaded.", cls="tree")
     else:
         tree_container = Div(Ul(*tree_items), cls="tree")
         
-    return Container(
-        Header(
+    # SANITIZED: Replaced Header and Container with raw layout primitives
+    return Div(
+        Div(
             H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
             P("Interactive Family Lineage & Records (FastHTML Engine)"),
             style="background: var(--primary); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px;"
@@ -145,7 +145,9 @@ def get():
             tree_container,
             style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto;"
         ),
-        Div(id="modal-placeholder")
+        Div(id="modal-placeholder"),
+        cls="container",
+        style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
 
 @rt("/edit-spouse-modal/{member_id}")
@@ -155,10 +157,10 @@ def get_modal(member_id: int):
     current_spouse = spouses.get(member_id, "")
     return Div(
         Div(
-            H3(f"Update Spouse for {member['name']}"),
+            H3(f"Update Spouse for {str(member['name'])}"),
             Form(
-                Input(type="text", name="spouse_name", value=current_spouse, placeholder="Enter full name"),
-                Input(type="hidden", name="member_id", value=member_id),
+                Input(type="text", name="spouse_name", value=str(current_spouse), placeholder="Enter full name"),
+                Input(type="hidden", name="member_id", value=int(member_id)),
                 Div(
                     Button("Cancel", type="button", onclick="document.getElementById('custom-modal').remove()", cls="secondary"),
                     Button("Save Changes", type="submit"),
@@ -175,11 +177,11 @@ def get_modal(member_id: int):
 
 @rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
-    spouse_name = spouse_name.strip()
+    spouse_name = str(spouse_name).strip()
     if spouse_name:
-        supabase.table("family_spouses").upsert({"member_id": member_id, "spouse_name": spouse_name}).execute()
+        supabase.table("family_spouses").upsert({"member_id": int(member_id), "spouse_name": spouse_name}).execute()
     else:
-        supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
+        supabase.table("family_spouses").delete().eq("member_id", int(member_id)).execute()
         
     return Response("", headers={"HX-Refresh": "true"})
 
