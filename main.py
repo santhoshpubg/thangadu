@@ -91,7 +91,6 @@ def get_spouses_dict():
     except Exception:
         return {}
 
-# FIXED: Removed all truthiness checks (`if sub_tree`) on FastHTML element primitives
 def generate_html_tree(parent_id, spouses):
     children = [m for m in family_data if m["parent"] == parent_id]
     if not children: 
@@ -116,9 +115,6 @@ def generate_html_tree(parent_id, spouses):
         )
         
         sub_tree = generate_html_tree(member["id"], spouses)
-        
-        # Explicitly pass elements or None directly. 
-        # FastHTML safely ignores None items without crashing.
         list_items.append(Li(node, sub_tree))
             
     return Ul(*list_items)
@@ -128,7 +124,6 @@ def get():
     spouses = get_spouses_dict()
     tree_layout = generate_html_tree(None, spouses)
     
-    # FIXED: Avoided the inline boolean ternary expression `tree_layout if tree_layout else ...`
     if tree_layout is None:
         tree_container = Div("No family records loaded.", cls="tree")
     else:
@@ -164,7 +159,7 @@ def get_modal(member_id: int):
                     style="display: flex; justify-content: flex-end; gap: 10px;"
                 ),
                 hx_post="/save-spouse",
-                hx_target="body"
+                hx_target="body"  # Target the body to swap the updated home tree view seamlessly
             ),
             style="background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"
         ),
@@ -172,6 +167,7 @@ def get_modal(member_id: int):
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
 
+# FIXED: Returns a strict, valid HTMX HTML response instead of executing get() internally
 @rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
     spouse_name = spouse_name.strip()
@@ -179,7 +175,9 @@ def post(member_id: int, spouse_name: str):
         supabase.table("family_spouses").upsert({"member_id": member_id, "spouse_name": spouse_name}).execute()
     else:
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
-    return get()
+        
+    # Send a clean response header forcing HTMX to refresh the main layout view safely
+    return HttpHeader("HX-Refresh", "true")
 
 if __name__ == "__main__":
     serve()
