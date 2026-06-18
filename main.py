@@ -115,7 +115,13 @@ def generate_html_tree(parent_id, spouses):
             hx_target="#modal-placeholder"
         )
         sub_tree = generate_html_tree(member["id"], spouses)
-        list_items.append(Li(node, NotStr(sub_tree)))
+        
+        # FIXED: Only wrap with NotStr if there is actual HTML layout string content
+        if sub_tree:
+            list_items.append(Li(node, NotStr(sub_tree)))
+        else:
+            list_items.append(Li(node))
+            
     return f"<ul>{''.join([str(item) for item in list_items])}</ul>"
 
 @rt("/")
