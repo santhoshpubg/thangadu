@@ -1,15 +1,15 @@
-# --- EMERGENCY RUNTIME TYPE PATCH (MUST BE LINES 1-3) ---
+# --- EMERGENCY RUNTIME TYPE PATCH ---
 import builtins
 import typing
-builtins.Any = typing.Any  # Globally forces 'Any' to exist across all framework modules
-# ---------------------------------------------------------
+builtins.Any = typing.Any 
+# ------------------------------------
 
 from fasthtml.common import *
 from supabase import create_client, Client
 
-
-# 1. Create a placeholder fast_app variable to unpack explicitly
+# Add secret_key here to stop FastHTML from trying to write a file
 _app, _rt = fast_app(
+    secret_key="some_long_secure_random_string_here_for_your_family_tree_session",
     hdrs=(
         Script(src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"),
         Style("""
@@ -26,6 +26,10 @@ _app, _rt = fast_app(
         """)
     )
 )
+
+app = _app
+rt = _rt
+application = _app
 
 # 2. EXPLICIT DEFINITION FOR VERCEL
 # Vercel looks for a top-level global named exactly 'app' or 'application' or 'handler'
