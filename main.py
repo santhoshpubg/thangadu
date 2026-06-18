@@ -174,7 +174,7 @@ async def get_modal_view(request):
             H3(f"Update Spouse for {str(member['name'])}"),
             Form(
                 Input(type="text", name="spouse_name", value=str(current_spouse), placeholder="Enter full name"),
-                Input(type="hidden", name="member_id", value=int(member_id)),
+                Input(type="hidden", name="member_id", value=str(member_id)), # Hidden input to carry ID
                 Div(
                     Button("Cancel", type="button", onclick="document.getElementById('custom-modal').remove()", cls="secondary"),
                     Button("Save Changes", type="submit"),
@@ -190,15 +190,25 @@ async def get_modal_view(request):
     )
     return HTMLResponse(content=f"{modal_layout}", status_code=200)
 
-# POST mutation handling uses standard RT engine since it only updates data and fires a refresh header
-@rt("/save-spouse")
-def post(member_id: int, spouse_name: str):
-    spouse_name = str(spouse_name).strip()
+# 👇 NATIVE STARLETTE ROUTE TO PARSE FORM & WRITE TO SUPABASE 👇
+@app.route("/save-spouse", methods=["POST"])
+async def post_save_spouse(request):
+    # Parse the incoming form data fields directly
+    form_data = await request.form()
+    member_id = int(form_data.get("member_id"))
+    spouse_name = str(form_data.get("spouse_name", "")).strip()
+    
     if spouse_name:
-        supabase.table("family_spouses").upsert({"member_id": int(member_id), "spouse_name": spouse_name}).execute()
+        # Upsert record if text exists
+        supabase.table("family_spouses").upsert({
+            "member_id": member_id, 
+            "spouse_name": spouse_name
+        }).execute()
     else:
-        supabase.table("family_spouses").delete().eq("member_id", int(member_id)).execute()
+        # Clear record if field is emptied out
+        supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
         
+    # Send a clean HTMX trigger back telling the browser window to reload the fresh tree
     return Response("", headers={"HX-Refresh": "true"})
 
 if __name__ == "__main__":
