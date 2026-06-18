@@ -2,8 +2,8 @@ from fasthtml.common import *
 from supabase import create_client, Client
 import os
 
-# Initialize FastHTML App with built-in styling
-fast_setup = fast_app(
+# 1. Initialize FastHTML correctly for Vercel's serverless runtime
+app, rt = fast_app(
     hdrs=(
         Script(src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"),
         Style("""
@@ -21,8 +21,8 @@ fast_setup = fast_app(
     )
 )
 
-app = fast_setup[0]
-rt = fast_setup[1]
+# 2. Expose the underlying ASGI app cleanly for the serverless function handler
+handler = app
 
 # Your Family Dataset (TYPO FIXED HERE: "parent": 19)
 family_data = [
@@ -85,18 +85,16 @@ def get_spouses_dict():
         response = supabase.table("family_spouses").select("*").execute()
         return {row["member_id"]: row["spouse_name"] for row in response.data}
     except Exception as e:
-        print(f"Error fetching data: {str(e)}")
+        print(f"Database error: {e}")
         return {}
 
 def generate_html_tree(parent_id, spouses):
     children = [m for m in family_data if m["parent"] == parent_id]
     if not children: return ""
-    
     list_items = []
     for member in children:
         spouse_name = spouses.get(member["id"], "")
         spouse_element = Span(f" ❤️ {spouse_name}", cls="spouse-container") if spouse_name else ""
-        
         node = Div(
             Span(f"Gen {member['gen']}", cls="gen-badge"),
             Span(member["name"], style="font-weight:600;"),
@@ -105,17 +103,14 @@ def generate_html_tree(parent_id, spouses):
             hx_get=f"/edit-spouse-modal/{member['id']}",
             hx_target="#modal-placeholder"
         )
-        
         sub_tree = generate_html_tree(member["id"], spouses)
         list_items.append(Li(node, NotStr(sub_tree)))
-        
     return f"<ul>{''.join([str(item) for item in list_items])}</ul>"
 
 @rt("/")
 def get():
     spouses = get_spouses_dict()
     tree_content = generate_html_tree(None, spouses)
-    
     return Container(
         Header(
             H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
@@ -134,7 +129,6 @@ def get_modal(member_id: int):
     member = next((m for m in family_data if m["id"] == member_id), None)
     spouses = get_spouses_dict()
     current_spouse = spouses.get(member_id, "")
-    
     return Div(
         Div(
             H3(f"Update Spouse for {member['name']}"),
@@ -162,8 +156,8 @@ def post(member_id: int, spouse_name: str):
         supabase.table("family_spouses").upsert({"member_id": member_id, "spouse_name": spouse_name}).execute()
     else:
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
-        
     return get()
 
+# 3. Only invoke local serve loop if executing file directly
 if __name__ == "__main__":
     serve()
