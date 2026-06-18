@@ -133,7 +133,6 @@ def get():
     else:
         tree_container = Div(Ul(*tree_items), cls="tree")
         
-    # Build complete HTML layout structure
     layout = Div(
         Div(
             H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
@@ -149,8 +148,8 @@ def get():
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
     
-    # BYPASS PIPELINE: Explicitly cast layout to string and return as an isolated Starlette HTMLResponse
-    return HTMLResponse(to_xml(layout))
+    # FIXED: Using FastHTML's native string casting helper avoids character escaping
+    return HTMLResponse(to_html(layout))
 
 @rt("/edit-spouse-modal/{member_id}")
 def get_modal(member_id: int):
@@ -178,8 +177,9 @@ def get_modal(member_id: int):
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
     
-    return HTMLResponse(to_xml(modal_layout))
-
+    # FIXED: Same adjustment here for the htmx modal target string component
+    return HTMLResponse(to_html(modal_layout))
+    
 @rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
     spouse_name = str(spouse_name).strip()
