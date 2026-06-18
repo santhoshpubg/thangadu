@@ -1,6 +1,8 @@
 from fasthtml.common import *
 from supabase import create_client, Client
+import os
 
+# Initialize FastHTML App with built-in styling
 fast_setup = fast_app(
     hdrs=(
         Script(src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"),
@@ -22,7 +24,7 @@ fast_setup = fast_app(
 app = fast_setup[0]
 rt = fast_setup[1]
 
-# Your Family Dataset
+# Your Family Dataset (TYPO FIXED HERE: "parent": 19)
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
     {"id": 2, "gen": 2, "name": "Songattae Linga", "parent": 1},
@@ -43,7 +45,7 @@ family_data = [
     {"id": 17, "gen": 6, "name": "Gowtham Ganesh", "parent": 10},
     {"id": 18, "gen": 7, "name": "Dev Adhitya", "parent": 17},
     {"id": 19, "gen": 6, "name": "Santhosh", "parent": 11},
-    {"id": 20, "gen": 7, "name": "Deendayal", parent: 19},
+    {"id": 20, "gen": 7, "name": "Deendayal", "parent": 19},
     {"id": 21, "gen": 5, "name": "Arumugan", "parent": 8},
     {"id": 22, "gen": 5, "name": "Chandran", "parent": 8},
     {"id": 23, "gen": 5, "name": "Sankaran", "parent": 8},
@@ -82,7 +84,8 @@ def get_spouses_dict():
     try:
         response = supabase.table("family_spouses").select("*").execute()
         return {row["member_id"]: row["spouse_name"] for row in response.data}
-    except Exception:
+    except Exception as e:
+        print(f"Error fetching data: {str(e)}")
         return {}
 
 def generate_html_tree(parent_id, spouses):
@@ -94,7 +97,6 @@ def generate_html_tree(parent_id, spouses):
         spouse_name = spouses.get(member["id"], "")
         spouse_element = Span(f" ❤️ {spouse_name}", cls="spouse-container") if spouse_name else ""
         
-        # Build out elements inside the list using FastHTML Python tags
         node = Div(
             Span(f"Gen {member['gen']}", cls="gen-badge"),
             Span(member["name"], style="font-weight:600;"),
@@ -124,16 +126,15 @@ def get():
             Div(NotStr(tree_content), cls="tree"),
             style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto;"
         ),
-        Div(id="modal-placeholder") # Target container for loading the update dialog
+        Div(id="modal-placeholder")
     )
 
 @rt("/edit-spouse-modal/{member_id}")
-def get(member_id: int):
+def get_modal(member_id: int):
     member = next((m for m in family_data if m["id"] == member_id), None)
     spouses = get_spouses_dict()
     current_spouse = spouses.get(member_id, "")
     
-    # Render interactive popup box directly to screen via HTMX swapping
     return Div(
         Div(
             H3(f"Update Spouse for {member['name']}"),
@@ -162,7 +163,6 @@ def post(member_id: int, spouse_name: str):
     else:
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
         
-    # Refresh the full application root view to present live changes instantly
     return get()
 
 if __name__ == "__main__":
