@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thangadu Songattae Family </title>
+    <title>Thangadu Songattae Family</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-color: #f4f7f6;
@@ -48,8 +49,13 @@
             border-radius: 8px;
             margin-bottom: 25px;
             border: 1px solid #e2e8f0;
-            gap: 10px;
+            gap: 15px;
             flex-wrap: wrap;
+        }
+
+        .toolbar-section {
+            flex: 1;
+            min-width: 280px;
         }
 
         button {
@@ -61,6 +67,7 @@
             cursor: pointer;
             font-weight: 600;
             font-size: 0.9rem;
+            margin-bottom: 5px;
         }
 
         button:hover { background: #1d4ed8; }
@@ -131,7 +138,6 @@
             margin-right: 8px;
         }
 
-        /* Generation Colors */
         .g1 { background: #fed7d7; color: #9b2c2c; }
         .g2 { background: #feebc8; color: #9c4221; }
         .g3 { background: #e2f0cb; color: #4a5d23; }
@@ -156,7 +162,6 @@
             font-size: 0.85rem;
         }
 
-        /* Modal Overlay Window */
         .modal {
             display: none;
             position: fixed;
@@ -188,26 +193,26 @@
 
 <div class="container">
     <header>
-        <h1>Songattae Family of The Cool, Misty Forest Land Thangadu </h1>
+        <h1>Songattae Family of The Cool, Misty Forest Land Thangadu</h1>
         <p>Interactive Family Lineage & Records</p>
     </header>
 
     <div class="toolbar">
-        <div>
+        <div class="toolbar-section">
             <strong>Interactive Features:</strong> Click on any individual to add or update their wife's name.
+            <div style="margin-top: 10px;">
+                <button class="btn-secondary" onclick="exportData()">💾 Backup Data (JSON)</button>
+                <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📂 Restore Data</button>
+                <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+            </div>
         </div>
-        <div>
-            <button class="btn-secondary" onclick="exportData()">💾 Backup Data (JSON)</button>
-            <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📂 Restore Data</button>
-            <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-        </div>
-        <div>
-            <strong>Family Background: Prominent agricultural pioneer & village elder (Gowda), designed, built and owned the vital "Songattae" (the monsoon(Soan) embankment/stone check-dam(Gattae)) that channeled water to the valley fields.
+        <div class="toolbar-section" style="border-left: 1px solid #e2e8f0; padding-left: 15px;">
+            <strong>Family Background:</strong> Prominent agricultural pioneer & village elder (Gowda), designed, built and owned the vital "Songattae" (the monsoon(Soan) embankment/stone check-dam(Gattae)) that channeled water to the valley fields.
         </div>
     </div>
 
     <div class="tree-card">
-        <div class="tree" id="treeContainer"></div>
+        <div class="tree" id="treeContainer">Loading tree structure...</div>
     </div>
 </div>
 
@@ -224,7 +229,13 @@
 </div>
 
 <script>
-    // Raw Datastore
+    const SUPABASE_URL = "https://cyjitmzyfqmwsfbruqpf.supabase.co"; 
+    // ⚠️ PASTE YOUR COPIED API KEY INSIDE THE QUOTES BELOW
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aml0bXp5ZnFtd3NmYnJ1cXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDUwOTAsImV4cCI6MjA5NzM4MTA5MH0.sSHvidL9ZXMbTOdnNyoCpTHAy6x_QXOnIGPoypWkI80";
+
+    // Fixed initialization variable call naming
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
     const familyData = [
         { id: 1, gen: 1, name: "Songattae Joghee", parent: null },
         { id: 2, gen: 2, name: "Songattae Linga", parent: 1 },
@@ -275,8 +286,27 @@
         { id: 47, gen: 6, name: "Siddhesh Joghee", parent: 46 }
     ];
 
-    let spouses = JSON.parse(localStorage.getItem('familySpouses')) || {};
+    let spouses = {};
     let activeMemberId = null;
+
+    // Fixed: Synchronized directly with live database fetching
+    async function loadSpousesFromDatabase() {
+        try {
+            const { data, error } = await supabaseClient.from('family_spouses').select('*');
+            if (error) throw error;
+            
+            spouses = {};
+            if (data) {
+                data.forEach(row => {
+                    spouses[row.member_id] = row.spouse_name;
+                });
+            }
+            renderTree();
+        } catch (err) {
+            console.error("Database connection error:", err.message);
+            document.getElementById('treeContainer').innerText = "Database connection error. Check API configuration keys.";
+        }
+    }
 
     function buildTree(parentId) {
         const children = familyData.filter(m => m.parent === parentId);
@@ -314,16 +344,28 @@
         document.getElementById('spouseModal').style.display = 'none';
     }
 
-    function saveSpouse() {
+    // Fixed: Connects modal actions directly to cloud transactions instead of local memory saves
+    async function saveSpouse() {
         const value = document.getElementById('spouseInput').value.trim();
-        if (value) {
-            spouses[activeMemberId] = value;
-        } else {
-            delete spouses[activeMemberId];
+        try {
+            if (value) {
+                const { error } = await supabaseClient.from('family_spouses').upsert({ 
+                    member_id: activeMemberId, 
+                    spouse_name: value,
+                    updated_at: new Date().toISOString()
+                });
+                if (error) throw error;
+                spouses[activeMemberId] = value;
+            } else {
+                const { error } = await supabaseClient.from('family_spouses').delete().eq('member_id', activeMemberId);
+                if (error) throw error;
+                delete spouses[activeMemberId];
+            }
+            closeModal();
+            renderTree();
+        } catch (err) {
+            alert("Could not synchronize database update: " + err.message);
         }
-        localStorage.setItem('familySpouses', JSON.stringify(spouses));
-        closeModal();
-        renderTree();
     }
 
     function exportData() {
@@ -340,22 +382,28 @@
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             try {
                 const imported = JSON.parse(e.target.result);
-                spouses = imported;
-                localStorage.setItem('familySpouses', JSON.stringify(spouses));
-                renderTree();
-                alert("Data successfully restored!");
+                // Push imported names up to database server
+                for (const [id, name] of Object.entries(imported)) {
+                    await supabaseClient.from('family_spouses').upsert({
+                        member_id: parseInt(id),
+                        spouse_name: name,
+                        updated_at: new Date().toISOString()
+                    });
+                }
+                await loadSpousesFromDatabase();
+                alert("Data successfully synchronized and restored!");
             } catch (err) {
-                alert("Invalid backup file format.");
+                alert("Invalid backup file processing error.");
             }
         };
         reader.readAsText(file);
     }
 
-    // Initialize Page
-    renderTree();
+    // Initialize Page on start from database values
+    loadSpousesFromDatabase();
 </script>
 </body>
 </html>
