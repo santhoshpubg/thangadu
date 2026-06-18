@@ -5,6 +5,7 @@ builtins.Any = typing.Any
 # ------------------------------------
 
 from fasthtml.common import *
+from starlette.responses import Response
 from supabase import create_client, Client
 
 _app, _rt = fast_app(
@@ -91,10 +92,11 @@ def get_spouses_dict():
     except Exception:
         return {}
 
+# FIXED: Returns a clean list of Li items. Never embeds a raw "None" inside a component constructor.
 def generate_html_tree(parent_id, spouses):
     children = [m for m in family_data if m["parent"] == parent_id]
     if not children: 
-        return None
+        return []
     
     list_items = []
     for member in children:
@@ -114,20 +116,24 @@ def generate_html_tree(parent_id, spouses):
             hx_target="#modal-placeholder"
         )
         
-        sub_tree = generate_html_tree(member["id"], spouses)
-        list_items.append(Li(node, sub_tree))
+        sub_children_items = generate_html_tree(member["id"], spouses)
+        if sub_children_items:
+            # If sub-children exist, compile them into a Ul element inside this Li item cleanly
+            list_items.append(Li(node, Ul(*sub_children_items)))
+        else:
+            list_items.append(Li(node))
             
-    return Ul(*list_items)
+    return list_items
 
 @rt("/")
 def get():
     spouses = get_spouses_dict()
-    tree_layout = generate_html_tree(None, spouses)
+    tree_items = generate_html_tree(None, spouses)
     
-    if tree_layout is None:
+    if not tree_items:
         tree_container = Div("No family records loaded.", cls="tree")
     else:
-        tree_container = Div(tree_layout, cls="tree")
+        tree_container = Div(Ul(*tree_items), cls="tree")
         
     return Container(
         Header(
@@ -159,7 +165,7 @@ def get_modal(member_id: int):
                     style="display: flex; justify-content: flex-end; gap: 10px;"
                 ),
                 hx_post="/save-spouse",
-                hx_target="body"  # Target the body to swap the updated home tree view seamlessly
+                hx_target="body"
             ),
             style="background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"
         ),
@@ -167,7 +173,6 @@ def get_modal(member_id: int):
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
 
-# FIXED: Returns a strict, valid HTMX HTML response instead of executing get() internally
 @rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
     spouse_name = spouse_name.strip()
@@ -176,8 +181,7 @@ def post(member_id: int, spouse_name: str):
     else:
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
         
-    # Send a clean response header forcing HTMX to refresh the main layout view safely
-    return HttpHeader("HX-Refresh", "true")
+    return Response("", headers={"HX-Refresh": "true"})
 
 if __name__ == "__main__":
     serve()
