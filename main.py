@@ -31,6 +31,15 @@ app = _app
 rt = _rt
 application = _app
 
+# 👇 FORCE VERCEL TO SEND HTML HEADERS 👇
+@app.middleware("http")
+async def force_html_headers(request, call_next):
+    response = await call_next(request)
+    # Force both main page and HTMX modal paths to load as HTML
+    if request.url.path == "/" or "modal" in request.url.path:
+        response.headers["content-type"] = "text/html; charset=utf-8"
+    return response
+
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
     {"id": 2, "gen": 2, "name": "Songattae Linga", "parent": 1},
@@ -148,9 +157,7 @@ def get():
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
     
-    # Force direct string conversion to get unescaped raw HTML strings
-    raw_html = f"<!DOCTYPE html><html><body>{layout}</body></html>"
-    return HTMLResponse(content=raw_html, status_code=200)
+    return HTMLResponse(content=f"<!DOCTYPE html><html><body>{layout}</body></html>")
 
 @rt("/edit-spouse-modal/{member_id}")
 def get_modal(member_id: int):
@@ -178,9 +185,9 @@ def get_modal(member_id: int):
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
     
-    return HTMLResponse(content=f"{modal_layout}", status_code=200)
-    
-@rt("/save-spouse")    
+    return HTMLResponse(content=f"{modal_layout}")
+
+@rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
     spouse_name = str(spouse_name).strip()
     if spouse_name:
