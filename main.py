@@ -8,24 +8,7 @@ from fasthtml.common import *
 from starlette.responses import Response, HTMLResponse
 from supabase import create_client, Client
 
-_app, _rt = fast_app(
-    secret_key="some_long_secure_random_string_here_for_your_family_tree_session",
-    hdrs=(
-        Script(src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"),
-        Style("""
-            :root { --primary: #1a365d; --accent: #2b6cb0; --spouse-color: #d63384; --border-color: #cbd5e0; }
-            body { font-family: system-ui, sans-serif; background: #f4f7f6; padding: 30px 15px; }
-            .tree ul { margin-left: 10px; position: relative; list-style-type: none; padding-left: 0; }
-            .tree li { margin: 0; padding: 8px 0 8px 25px; position: relative; }
-            .tree li::before { content: ""; position: absolute; top: 0; left: 0; border-left: 2px solid var(--border-color); height: 100%; }
-            .tree li::after { content: ""; position: absolute; top: 22px; left: 0; border-top: 2px solid var(--border-color); width: 22px; }
-            .tree li:last-child::before { height: 22px; }
-            .node-box { display: inline-flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-            .gen-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-right: 8px; background: #ebf8ff; color: #2b6cb0; }
-            .spouse-container { color: var(--spouse-color); font-weight: 500; margin-left: 6px; }
-        """)
-    )
-)
+_app, _rt = fast_app(secret_key="some_long_secure_random_string_here_for_your_family_tree_session")
 
 app = _app
 rt = _rt
@@ -123,8 +106,9 @@ def generate_html_tree(parent_id, spouses):
             
     return list_items
 
-@rt("/")
-def get():
+# 👇 BYPASS FASTHTML ROUTING FOR THE MAIN PAGE 👇
+@app.route("/")
+async def get_homepage(request):
     spouses = get_spouses_dict()
     tree_items = generate_html_tree(None, spouses)
     
@@ -133,30 +117,59 @@ def get():
     else:
         tree_container = Div(Ul(*tree_items), cls="tree")
         
-    # Return a native, unnested Titled layout container
-    # This automatically forces Content-Type: text/html and avoids the Vercel list unpacking error
-    return Titled(
-        "Songattae Family of The Cool, Misty Forest Land Thangadu",
+    layout = Div(
         Div(
+            H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
             P("Interactive Family Lineage & Records (FastHTML Engine)"),
-            style="color: var(--primary); font-weight: 500; margin-bottom: 25px;"
+            style="background: var(--primary); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px;"
         ),
         Div(
             tree_container,
             style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto;"
         ),
         Div(id="modal-placeholder"),
+        cls="container",
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
+    
+    # Clean injection template containing required libraries and styling
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Thangadu Family Tree</title>
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <style>
+            :root {{ --primary: #1a365d; --accent: #2b6cb0; --spouse-color: #d63384; --border-color: #cbd5e0; }}
+            body {{ font-family: system-ui, sans-serif; background: #f4f7f6; padding: 30px 15px; }}
+            .tree ul {{ margin-left: 10px; position: relative; list-style-type: none; padding-left: 0; }}
+            .tree li {{ margin: 0; padding: 8px 0 8px 25px; position: relative; }}
+            .tree li::before {{ content: ""; position: absolute; top: 0; left: 0; border-left: 2px solid var(--border-color); height: 100%; }}
+            .tree li::after {{ content: ""; position: absolute; top: 22px; left: 0; border-top: 2px solid var(--border-color); width: 22px; }}
+            .tree li:last-child::before {{ height: 22px; }}
+            .node-box {{ display: inline-flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; cursor: pointer; }}
+            .gen-badge {{ font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-right: 8px; background: #ebf8ff; color: #2b6cb0; }}
+            .spouse-container {{ color: var(--spouse-color); font-weight: 500; margin-left: 6px; }}
+        </style>
+    </head>
+    <body>
+        {layout}
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
-@rt("/edit-spouse-modal/{member_id}")
-def get_modal(member_id: int):
+# 👇 BYPASS FASTHTML ROUTING FOR THE MODAL GET ROUTE 👇
+@app.route("/edit-spouse-modal/{member_id}")
+async def get_modal_view(request):
+    member_id = int(request.path_params["member_id"])
     member = next((m for m in family_data if m["id"] == member_id), None)
     spouses = get_spouses_dict()
     current_spouse = spouses.get(member_id, "")
     
-    # Return as a clean, single Div component element directly
-    return Div(
+    modal_layout = Div(
         Div(
             H3(f"Update Spouse for {str(member['name'])}"),
             Form(
@@ -175,9 +188,9 @@ def get_modal(member_id: int):
         id="custom-modal",
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
-    
-    return HTMLResponse(content=f"{modal_layout}")
+    return HTMLResponse(content=f"{modal_layout}", status_code=200)
 
+# POST mutation handling uses standard RT engine since it only updates data and fires a refresh header
 @rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
     spouse_name = str(spouse_name).strip()
