@@ -1,4 +1,5 @@
 from fasthtml.common import *
+import typing  # Adds an emergency fallback for missing internal package types
 from supabase import create_client, Client
 
 # 1. Create a placeholder fast_app variable to unpack explicitly
