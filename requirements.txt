@@ -1,5 +1,5 @@
-fasthtml
-frameset
+git+https://github.com/AnswerDotAI/fasthtml.git
+git+https://github.com/AnswerDotAI/frameset.git
 supabase
 python-dotenv
 starlette
