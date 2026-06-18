@@ -165,4 +165,5 @@ def post(member_id: int, spouse_name: str):
     # Refresh the full application root view to present live changes instantly
     return get()
 
-serve()
+if __name__ == "__main__":
+    serve()
