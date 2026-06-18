@@ -145,7 +145,7 @@ async def get_homepage(request):
         
         # 2. 👇 NEW FEATURE: Heritage & Background Showcase Panel 👇
         Div(
-            H2("📜 Origins & Naming Heritage", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.4rem;"),
+            H2("📜 Family Origins & Heritage", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.4rem;"),
             P("Rooted deeply in classic Badaga naming tradition, prefixes honor ancestral achievements. When a family elder achieved great respect, leadership, or performed an impactful community feat, their birth name was permanently prefixed with their village, agricultural estate, or monumental achievement."),
             P("As our foundational patriarch, ", B("Songattae Joghee"), " carries two beautiful historical possibilities passed down through generations:"),
             
@@ -186,7 +186,7 @@ async def get_homepage(request):
             Hr(style="border: 0; border-top: 1px solid #cbd5e0; margin: 40px 0 20px 0;"),
             Div(
                 P("© 2026 Songattae Family. All Rights Reserved.", style="margin: 5px 0; font-weight: 500;"),
-                P("Contacts: contact@thangadu.family | Built with FastHTML & Supabase", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
+                P("Contacts: santhosh.sundaran@icloud.com | Built with FastHTML & Supabase", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
                 style="text-align: center; padding-bottom: 20px; color: #4a5568;"
             )
         ),
