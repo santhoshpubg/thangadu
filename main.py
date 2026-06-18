@@ -1,6 +1,12 @@
+# --- EMERGENCY RUNTIME TYPE PATCH (MUST BE LINES 1-3) ---
+import builtins
+import typing
+builtins.Any = typing.Any  # Globally forces 'Any' to exist across all framework modules
+# ---------------------------------------------------------
+
 from fasthtml.common import *
-import typing  # Adds an emergency fallback for missing internal package types
 from supabase import create_client, Client
+
 
 # 1. Create a placeholder fast_app variable to unpack explicitly
 _app, _rt = fast_app(
