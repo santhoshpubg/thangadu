@@ -31,12 +31,6 @@ app = _app
 rt = _rt
 application = _app
 
-# 2. EXPLICIT DEFINITION FOR VERCEL
-# Vercel looks for a top-level global named exactly 'app' or 'application' or 'handler'
-app = _app
-rt = _rt
-application = _app  # Back up alias
-
 # --- Family Dataset ---
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
