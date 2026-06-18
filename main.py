@@ -1,12 +1,9 @@
 from fasthtml.common import *
 from supabase import create_client, Client
 
-# Initialize FastHTML App with built-in styling
-app, rt = fast_app(
+fast_setup = fast_app(
     hdrs=(
-        # Link the Supabase Javascript Engine directly inside FastHTML
         Script(src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"),
-        # Custom styles for the family tree lines & cards
         Style("""
             :root { --primary: #1a365d; --accent: #2b6cb0; --spouse-color: #d63384; --border-color: #cbd5e0; }
             body { font-family: system-ui, sans-serif; background: #f4f7f6; padding: 30px 15px; }
@@ -21,6 +18,9 @@ app, rt = fast_app(
         """)
     )
 )
+
+app = fast_setup[0]
+rt = fast_setup[1]
 
 # Your Family Dataset
 family_data = [
