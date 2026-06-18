@@ -7,7 +7,6 @@ builtins.Any = typing.Any
 from fasthtml.common import *
 from supabase import create_client, Client
 
-# Initialize FastHTML with a fixed session encryption key
 _app, _rt = fast_app(
     secret_key="some_long_secure_random_string_here_for_your_family_tree_session",
     hdrs=(
@@ -31,7 +30,6 @@ app = _app
 rt = _rt
 application = _app
 
-# Dataset
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
     {"id": 2, "gen": 2, "name": "Songattae Linga", "parent": 1},
@@ -93,7 +91,7 @@ def get_spouses_dict():
     except Exception:
         return {}
 
-# REFACTORED: Fully native FastHTML component generation
+# FIXED: Removed all truthiness checks (`if sub_tree`) on FastHTML element primitives
 def generate_html_tree(parent_id, spouses):
     children = [m for m in family_data if m["parent"] == parent_id]
     if not children: 
@@ -103,7 +101,6 @@ def generate_html_tree(parent_id, spouses):
     for member in children:
         spouse_name = spouses.get(member["id"], "")
         
-        # Build layout cleanly using lists
         node_contents = [
             Span(f"Gen {member['gen']}", cls="gen-badge"),
             Span(member["name"], style="font-weight:600;")
@@ -119,10 +116,10 @@ def generate_html_tree(parent_id, spouses):
         )
         
         sub_tree = generate_html_tree(member["id"], spouses)
-        if sub_tree:
-            list_items.append(Li(node, sub_tree))
-        else:
-            list_items.append(Li(node))
+        
+        # Explicitly pass elements or None directly. 
+        # FastHTML safely ignores None items without crashing.
+        list_items.append(Li(node, sub_tree))
             
     return Ul(*list_items)
 
@@ -131,6 +128,12 @@ def get():
     spouses = get_spouses_dict()
     tree_layout = generate_html_tree(None, spouses)
     
+    # FIXED: Avoided the inline boolean ternary expression `tree_layout if tree_layout else ...`
+    if tree_layout is None:
+        tree_container = Div("No family records loaded.", cls="tree")
+    else:
+        tree_container = Div(tree_layout, cls="tree")
+        
     return Container(
         Header(
             H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
@@ -138,7 +141,7 @@ def get():
             style="background: var(--primary); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px;"
         ),
         Div(
-            Div(tree_layout if tree_layout else "No family records loaded.", cls="tree"),
+            tree_container,
             style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto;"
         ),
         Div(id="modal-placeholder")
