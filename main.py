@@ -31,15 +31,6 @@ app = _app
 rt = _rt
 application = _app
 
-# 👇 FORCE VERCEL TO SEND HTML HEADERS 👇
-@app.middleware("http")
-async def force_html_headers(request, call_next):
-    response = await call_next(request)
-    # Force both main page and HTMX modal paths to load as HTML
-    if request.url.path == "/" or "modal" in request.url.path:
-        response.headers["content-type"] = "text/html; charset=utf-8"
-    return response
-
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
     {"id": 2, "gen": 2, "name": "Songattae Linga", "parent": 1},
@@ -142,22 +133,21 @@ def get():
     else:
         tree_container = Div(Ul(*tree_items), cls="tree")
         
-    layout = Div(
+    # Return a native, unnested Titled layout container
+    # This automatically forces Content-Type: text/html and avoids the Vercel list unpacking error
+    return Titled(
+        "Songattae Family of The Cool, Misty Forest Land Thangadu",
         Div(
-            H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
             P("Interactive Family Lineage & Records (FastHTML Engine)"),
-            style="background: var(--primary); color: white; padding: 25px; border-radius: 12px; text-align: center; margin-bottom: 25px;"
+            style="color: var(--primary); font-weight: 500; margin-bottom: 25px;"
         ),
         Div(
             tree_container,
             style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto;"
         ),
         Div(id="modal-placeholder"),
-        cls="container",
         style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
     )
-    
-    return HTMLResponse(content=f"<!DOCTYPE html><html><body>{layout}</body></html>")
 
 @rt("/edit-spouse-modal/{member_id}")
 def get_modal(member_id: int):
@@ -165,7 +155,8 @@ def get_modal(member_id: int):
     spouses = get_spouses_dict()
     current_spouse = spouses.get(member_id, "")
     
-    modal_layout = Div(
+    # Return as a clean, single Div component element directly
+    return Div(
         Div(
             H3(f"Update Spouse for {str(member['name'])}"),
             Form(
