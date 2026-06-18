@@ -1,16 +1,12 @@
 # --- EMERGENCY RUNTIME TYPE PATCH ---
 import builtins
 import typing
-builtins.Any = typing.Any
+builtins.Any = typing.Any 
 # ------------------------------------
 
 from fasthtml.common import *
-from starlette.responses import Response
 from supabase import create_client, Client
 
-# ---------------------------------------------------------
-# FastHTML App
-# ---------------------------------------------------------
 _app, _rt = fast_app(
     secret_key="some_long_secure_random_string_here_for_your_family_tree_session",
     hdrs=(
@@ -34,9 +30,6 @@ app = _app
 rt = _rt
 application = _app
 
-# ---------------------------------------------------------
-# Static Family Data
-# ---------------------------------------------------------
 family_data = [
     {"id": 1, "gen": 1, "name": "Songattae Joghee", "parent": None},
     {"id": 2, "gen": 2, "name": "Songattae Linga", "parent": 1},
@@ -87,16 +80,10 @@ family_data = [
     {"id": 47, "gen": 6, "name": "Siddhesh Joghee", "parent": 46}
 ]
 
-# ---------------------------------------------------------
-# Supabase Client
-# ---------------------------------------------------------
 SUPABASE_URL = "https://cyjitmzyfqmwsfbruqpf.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aml0bXp5ZnFtd3NmYnJ1cXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDUwOTAsImV4cCI6MjA5NzM4MTA5MH0.sSHvidL9ZXMbTOdnNyoCpTHAy6x_QXOnIGPoypWkI80"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-# ---------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------
 def get_spouses_dict():
     try:
         response = supabase.table("family_spouses").select("*").execute()
@@ -106,45 +93,42 @@ def get_spouses_dict():
 
 def generate_html_tree(parent_id, spouses):
     children = [m for m in family_data if m["parent"] == parent_id]
-    if not children:
+    if not children: 
         return None
-
+    
     list_items = []
     for member in children:
         spouse_name = spouses.get(member["id"], "")
-
+        
         node_contents = [
             Span(f"Gen {member['gen']}", cls="gen-badge"),
             Span(member["name"], style="font-weight:600;")
         ]
         if spouse_name:
             node_contents.append(Span(f" ❤️ {spouse_name}", cls="spouse-container"))
-
+            
         node = Div(
             *node_contents,
             cls="node-box",
             hx_get=f"/edit-spouse-modal/{member['id']}",
             hx_target="#modal-placeholder"
         )
-
+        
         sub_tree = generate_html_tree(member["id"], spouses)
         list_items.append(Li(node, sub_tree))
-
+            
     return Ul(*list_items)
 
-# ---------------------------------------------------------
-# Routes
-# ---------------------------------------------------------
 @rt("/")
 def get():
     spouses = get_spouses_dict()
     tree_layout = generate_html_tree(None, spouses)
-
+    
     if tree_layout is None:
         tree_container = Div("No family records loaded.", cls="tree")
     else:
         tree_container = Div(tree_layout, cls="tree")
-
+        
     return Container(
         Header(
             H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
@@ -163,7 +147,6 @@ def get_modal(member_id: int):
     member = next((m for m in family_data if m["id"] == member_id), None)
     spouses = get_spouses_dict()
     current_spouse = spouses.get(member_id, "")
-
     return Div(
         Div(
             H3(f"Update Spouse for {member['name']}"),
@@ -176,7 +159,7 @@ def get_modal(member_id: int):
                     style="display: flex; justify-content: flex-end; gap: 10px;"
                 ),
                 hx_post="/save-spouse",
-                hx_target="body"
+                hx_target="body"  # Target the body to swap the updated home tree view seamlessly
             ),
             style="background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"
         ),
@@ -184,18 +167,17 @@ def get_modal(member_id: int):
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; z-index: 1000;"
     )
 
+# FIXED: Returns a strict, valid HTMX HTML response instead of executing get() internally
 @rt("/save-spouse")
 def post(member_id: int, spouse_name: str):
     spouse_name = spouse_name.strip()
-
     if spouse_name:
         supabase.table("family_spouses").upsert({"member_id": member_id, "spouse_name": spouse_name}).execute()
     else:
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
+        
+    # Send a clean response header forcing HTMX to refresh the main layout view safely
+    return HttpHeader("HX-Refresh", "true")
 
-    # Correct HTMX refresh response
-    return Response("", headers={"HX-Refresh": "true"})
-
-# ---------------------------------------------------------
 if __name__ == "__main__":
     serve()
