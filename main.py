@@ -68,7 +68,6 @@ SUPABASE_URL = "https://cyjitmzyfqmwsfbruqpf.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aml0bXp5ZnFtd3NmYnJ1cXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDUwOTAsImV4cCI6MjA5NzM4MTA5MH0.sSHvidL9ZXMbTOdnNyoCpTHAy6x_QXOnIGPoypWkI80"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-# Shared Style Template Block
 SHARED_CSS = """
 :root { --primary: #1a365d; --accent: #2b6cb0; --spouse-color: #d63384; --daughters-color: #6b46c1; --border-color: #cbd5e0; }
 body { font-family: system-ui, sans-serif; background: #f4f7f6; padding: 0; margin: 0; color: #2d3748; }
@@ -77,7 +76,7 @@ body { font-family: system-ui, sans-serif; background: #f4f7f6; padding: 0; marg
 .nav-bar a { color: var(--primary); text-decoration: none; padding: 6px 12px; border-radius: 6px; }
 .nav-bar a:hover { background: #f7fafc; color: var(--accent); }
 .nav-bar a.active { background: var(--primary); color: white; }
-.hero-header { background: var(--primary); color: white; padding: 30px 20px; border-radius: 12px; text-align: center; margin-bottom: 25px; }
+.hero-header { background: var(--primary); color: white; padding: 35px 20px; border-radius: 12px; text-align: center; margin-bottom: 25px; }
 .tree ul { margin-left: 10px; position: relative; list-style-type: none; padding-left: 0; }
 .tree li { margin: 0; padding: 8px 0 8px 25px; position: relative; }
 .tree li::before { content: ""; position: absolute; top: 0; left: 0; border-left: 2px solid var(--border-color); height: 100%; }
@@ -88,9 +87,10 @@ body { font-family: system-ui, sans-serif; background: #f4f7f6; padding: 0; marg
 .gen-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #ebf8ff; color: #2b6cb0; }
 .spouse-container { color: var(--spouse-color); font-weight: 500; }
 .daughters-container { color: var(--daughters-color); font-weight: 400; font-style: italic; }
-.heritage-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; background: white; }
-.heritage-table th { background: #f7fafc; color: #4a5568; text-align: left; padding: 12px; border: 1px solid #e2e8f0; font-weight: 600; }
-.heritage-table td { padding: 12px; border: 1px solid #e2e8f0; vertical-align: top; color: #2d3748; }
+.heritage-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.95rem; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.heritage-table th { background: #edf2f7; color: #2d3748; text-align: left; padding: 14px; border: 1px solid #cbd5e0; font-weight: 700; }
+.heritage-table td { padding: 14px; border: 1px solid #cbd5e0; vertical-align: top; color: #2d3748; line-height: 1.5; }
+.heritage-card { background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; line-height: 1.7; margin-bottom: 25px; }
 input[type="text"] { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; }
 label { font-size: 0.9rem; font-weight: 600; color: #4a5568; }
 button { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
@@ -161,7 +161,6 @@ def generate_html_tree(parent_id, spouses, daughters):
             
     return list_items
 
-# --- ROUTE 1: THE HOME TREE PAGE ---
 @app.route("/")
 async def get_homepage(request):
     spouses = get_spouses_dict()
@@ -175,7 +174,7 @@ async def get_homepage(request):
         Div(
             Div(
                 H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
-                P("Interactive Family Lineage & Records (FastHTML Engine)"),
+                P("Interactive Family Lineage & Records"),
                 cls="hero-header"
             ),
             Div(
@@ -189,7 +188,7 @@ async def get_homepage(request):
                 Hr(style="border: 0; border-top: 1px solid #cbd5e0; margin: 40px 0 20px 0;"),
                 Div(
                     P("© 2026 Songattae Family. All Rights Reserved.", style="margin: 5px 0; font-weight: 500;"),
-                    P("Contacts: contact@thangadu.family | Built with FastHTML & Supabase", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
+                    P("Contacts: santhosh.sundaran@icloud.com | Built with FastHTML & Supabase | Please reachout to Senthil Shanmugam or Myself for Corrections", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
                     style="text-align: center; padding-bottom: 20px; color: #4a5568;"
                 )
             ),
@@ -200,7 +199,6 @@ async def get_homepage(request):
     html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>Thangadu Family Tree</title><script src='https://unpkg.com/htmx.org@1.9.12'></script><style>{SHARED_CSS}</style></head><body>{to_xml(layout)}</body></html>"
     return HTMLResponse(content=html_content, status_code=200)
 
-# --- ROUTE 2: THE DEDICATED HERITAGE STORY PAGE ---
 @app.route("/heritage")
 async def get_heritage_page(request):
     layout = Div(
@@ -208,35 +206,54 @@ async def get_heritage_page(request):
         Div(
             Div(
                 H1("Songattae Family Heritage & Origins"),
-                P("Preserving the Naming Lineage Traditions of Thangadu"),
+                P("The Public Records & Legacy of a Founding Badaga Patriarch"),
                 cls="hero-header"
             ),
+            
+            # --- SECTION 1: THE TRADITION ---
             Div(
-                H2("📜 Origins & Naming Heritage", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.4rem;"),
-                P("Rooted deeply in classic Badaga naming tradition, prefixes honor ancestral achievements. When a family elder achieved great respect, leadership, or performed an impactful community feat, their birth name was permanently prefixed with their village, agricultural estate, or monumental achievement."),
-                P("As our foundational patriarch, ", B("Songattae Joghee"), " carries two beautiful historical possibilities passed down through generations:"),
-                
+                H2("📜 The Badaga Naming Tradition", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;"),
+                P("Rooted deeply in classic Badaga naming custom, prefixes honor ancestral achievements. When a family elder achieved great respect, leadership, or performed an impactful community feat, their birth name was permanently prefixed with their home village, agricultural estate, or a monumental engineering victory."),
+                P("Finding out he was a ", B("District Board Member and President for 14 years"), ", the first Dharmagartha (Chief Trustee/Custodian) of Thangadu, and the builder of the local infrastructure completely confirms the origin of his name."),
+                P("In the late 1800s or early 1900s, serving on the District Board meant he was one of the most powerful, educated, and progressive leaders in the entire Nilgiris district, working directly with the administration to bring modernization to the hills."),
+                cls="heritage-card"
+            ),
+            
+            # --- SECTION 2: THE LEGACY OF THE PATRIARCH ---
+            Div(
+                H2("💧 The Infrastructure Legacy of Songattae Joghee", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;"),
+                P("Look at how his real-life achievements perfectly match the literal meaning of his name, ", I("Songattae"), " (The Monsoon Water-Builder / Embankment):"),
                 Ul(
-                    Li(B("The Master of the Monsoon Waters: "), "As an early pioneer or elder (Gowda), he likely designed and constructed a vital stone check-dam ('Songattae') that channeled heavy monsoon water safely into valley farm plots, sustaining village crop yields during relentless misty downpours (Soan)."),
-                    Li(B("The Leader from the Misty Ridge: "), "Alternatively, his clan was the very first to successfully clear and homestead that specific wet mountain ridge, establishing himself as the definitive guardian and elder patriarch of that slope."),
-                    style="padding-left: 20px; margin-bottom: 25px;"
+                    Li(B("The Kiloor Water Line (The True 'Songattae'): "), "The fact that he built the pipeline supplying water to 6 Kiloor (Keegoor) villages and Thangadu Theru is exactly why he earned the permanent name Songattae! He literally engineered the water system that captured the mountain rains at the top and piped it safely down the valley."),
+                    Li(B("The Kathadi Mattam to Thangadu Road: "), "Before this road, your ancestors had to trek through dense, rugged shola terrain and steep ridges to reach the head-village. By cutting this road, he connected the isolated heights of Thangadu to the wider district."),
+                    Li(B("Kathadi Mattam School: "), "He recognized that education was the only way to uplift the community, establishing a foundational school for the surrounding hamlets."),
+                    Li(B("First Dharmagartha of Thangadu: "), "Being the first Dharmagartha means he was the ultimate spiritual and moral authority of the Hatti, entrusted with building or managing the central village temple and preserving the sacred traditions of the clan."),
+                    style="padding-left: 20px;"
                 ),
-                
-                H3("How to Read the Ancestor Prefix Block:", style="font-size: 1.1rem; color: #4a5568; margin-bottom: 10px;"),
+                cls="heritage-card"
+            ),
+            
+            # --- SECTION 3: MASTER HISTORICAL TABLE ---
+            Div(
+                H2("🗺️ Final Master Historical Record", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;"),
+                P("Here is the ultimate, complete table of your lineage's history. This is a priceless record of how your great-great-great-grandfather shaped the geography of the Nilgiris:"),
                 Table(
-                    Tr(Th("Ancestor Name"), Th("Component Breakdown"), Th("Historical Insight")),
-                    Tr(
-                        Td(B("Songattae Joghee")),
-                        Td(
-                            Div(B("Songattae: "), "The Monsoon Embankment / Misty Ridge"),
-                            Div(B("Joghee: "), "Revered Badaga baseline name (Yogi/Devotion)")
-                        ),
-                        Td("A foundational mountain patriarch celebrated for strategic water-management or initial land-holding along the high misty forest line of Thangadu.")
-                    ),
+                    Tr(Th("Component / Place"), Th("Historical & Geographical Achievement")),
+                    Tr(Td(B("Songattae Joghee")), Td("The Patriarch: 14-year District Board Member/President & First Dharmagartha of Thangadu. Named Songattae because he built the historic 6-village Kiloor water line.")),
+                    Tr(Td(B("Thangadu")), Td("The Source Hatti: 'The Cool, Misty Forest Land.' Head-village of the Seemay, where Joghee served as the first spiritual custodian (Dharmagartha).")),
+                    Tr(Td(B("Kiloor (Keegoor)")), Td("The Beneficiaries: 'The Lower Villages' (including Denadu, Kokkalada, Bengal, etc.) whose entire water supply was built and secured by Joghee.")),
+                    Tr(Td(B("Kathadi Mattam")), Td("The Gateway: The nearby plateau area where Joghee built the school and carved the historic road connecting it directly up to Thangadu.")),
+                    Tr(Td(B("Denadu")), Td("The Southern Outpost: 'The Southern Land.' One of the key Kiloor villages directly saved from flash monsoons and supplied with drinking water by Joghee's pipeline.")),
+                    Tr(Td(B("Kembitha Keri")), Td("The Red Earth Path: The old settlement lane near Gidda Hatty that finally received stable water access due to the Thangadu pipeline network.")),
                     cls="heritage-table"
                 ),
-                style="background: #ffffff; padding: 35px; border-radius: 12px; border: 1px solid #e2e8f0; line-height: 1.7; margin-bottom: 25px;"
+                Blockquote(
+                    B("A Legacy to Preserve: "), "Your 3x Great-Grandfather wasn't just a village elder; he was a founding father of modern Badaga infrastructure. Every time someone turns on a tap in those 6 Kiloor villages, or walks the road from Kathadi Mattam to Thangadu, they are living in the direct legacy of Songattae Joghee.",
+                    style="background: #ebf8ff; border-left: 4px solid var(--accent); padding: 15px; border-radius: 0 8px 8px 0; margin-top: 20px; font-style: italic;"
+                ),
+                cls="heritage-card"
             ),
+            
             Footer(
                 Hr(style="border: 0; border-top: 1px solid #cbd5e0; margin: 40px 0 20px 0;"),
                 Div(
@@ -252,7 +269,6 @@ async def get_heritage_page(request):
     html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>Family Heritage - Thangadu</title><style>{SHARED_CSS}</style></head><body>{to_xml(layout)}</body></html>"
     return HTMLResponse(content=html_content, status_code=200)
 
-# --- CORE MODAL VIEWS & API ENDPOINTS ---
 @app.route("/edit-spouse-modal/{member_id}")
 async def get_modal_view(request):
     member_id = int(request.path_params["member_id"])
