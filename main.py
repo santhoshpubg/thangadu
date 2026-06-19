@@ -236,15 +236,15 @@ async def get_heritage_page(request):
             # --- SECTION 3: MASTER HISTORICAL TABLE ---
             Div(
                 H2("🗺️ Final Master Historical Record", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;"),
-                P("Here is the ultimate, complete table of your lineage's history. This is a priceless record of how your great-great-great-grandfather shaped the geography of the Nilgiris:"),
+                P("Here is the ultimate, complete table of lineage's history. This is a priceless record of how our great-great-great-grandfather shaped the geography of the Nilgiris:"),
                 Table(
                     Tr(Th("Component / Place"), Th("Historical & Geographical Achievement")),
                     Tr(Td(B("Songattae Joghee")), Td("The Patriarch: 14-year District Board Member/President & First Dharmagartha of Thangadu. Named Songattae because he built the historic 6-village Kiloor water line.")),
                     Tr(Td(B("Thangadu")), Td("The Source Hatti: 'The Cool, Misty Forest Land.' Head-village of the Seemay, where Joghee served as the first spiritual custodian (Dharmagartha).")),
                     Tr(Td(B("Kiloor (Keegoor)")), Td("The Beneficiaries: 'The Lower Villages' (including Denadu, Kokkalada, Bengal, etc.) whose entire water supply was built and secured by Joghee.")),
                     Tr(Td(B("Kathadi Mattam")), Td("The Gateway: The nearby plateau area where Joghee built the school and carved the historic road connecting it directly up to Thangadu.")),
-                    Tr(Td(B("Denadu")), Td("The Southern Outpost: 'The Southern Land.' One of the key Kiloor villages directly saved from flash monsoons and supplied with drinking water by Joghee's pipeline.")),
-                    Tr(Td(B("Kembitha Keri")), Td("The Red Earth Path: The old settlement lane near Gidda Hatty that finally received stable water access due to the Thangadu pipeline network.")),
+                    Tr(Td(B("Denadu")), Td("The Southern Outpost of Meekunadu Seemay: 'The Southern Land.' One of the key Kiloor villages directly saved from flash monsoons and supplied with drinking water by Joghee's pipeline.")),
+                    Tr(Td(B("Kembitha Keri")), Td("The Red Earth Path: The old settlement lane near Gidda Hatty that finally received stable water access due to the Songattae network before entering Kundha/Gethai River basin.")),
                     cls="heritage-table"
                 ),
                 Blockquote(
