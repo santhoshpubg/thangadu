@@ -258,7 +258,7 @@ async def get_heritage_page(request):
                 Hr(style="border: 0; border-top: 1px solid #cbd5e0; margin: 40px 0 20px 0;"),
                 Div(
                     P("© 2026 Songattae Family. All Rights Reserved.", style="margin: 5px 0; font-weight: 500;"),
-                    P("Contacts: contact@thangadu.family | Built with FastHTML & Supabase", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
+                    P("Contacts: santhosh.sundaran@icloud.com | Being is Blessing | Love All , Serve All :) ", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
                     style="text-align: center; padding-bottom: 20px; color: #4a5568;"
                 )
             ),
