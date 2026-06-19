@@ -161,7 +161,7 @@ async def get_homepage(request):
                 Tr(
                     Td(B("Songattae Joghee")),
                     Td(
-                        Div(B("Songattae: "), "The Monsoon Embankment / Misty Ridge"),
+                        Div(B("Songattae: "), "`Soan/Sona` - Monsoon Drizzle  `Gattae` - The Embankment / CheckDam / Ridge"),
                         Div(B("Joghee: "), "Revered Badaga baseline name (Yogi/Devotion)")
                     ),
                     Td("A foundational mountain patriarch celebrated for strategic water-management or initial land-holding along the high misty forest line of Thangadu.")
