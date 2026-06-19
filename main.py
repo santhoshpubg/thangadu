@@ -68,6 +68,43 @@ SUPABASE_URL = "https://cyjitmzyfqmwsfbruqpf.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aml0bXp5ZnFtd3NmYnJ1cXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4MDUwOTAsImV4cCI6MjA5NzM4MTA5MH0.sSHvidL9ZXMbTOdnNyoCpTHAy6x_QXOnIGPoypWkI80"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+# Shared Style Template Block
+SHARED_CSS = """
+:root { --primary: #1a365d; --accent: #2b6cb0; --spouse-color: #d63384; --daughters-color: #6b46c1; --border-color: #cbd5e0; }
+body { font-family: system-ui, sans-serif; background: #f4f7f6; padding: 0; margin: 0; color: #2d3748; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px 15px; }
+.nav-bar { display: flex; justify-content: center; gap: 20px; background: white; border-bottom: 1px solid #e2e8f0; padding: 15px; font-weight: 600; }
+.nav-bar a { color: var(--primary); text-decoration: none; padding: 6px 12px; border-radius: 6px; }
+.nav-bar a:hover { background: #f7fafc; color: var(--accent); }
+.nav-bar a.active { background: var(--primary); color: white; }
+.hero-header { background: var(--primary); color: white; padding: 30px 20px; border-radius: 12px; text-align: center; margin-bottom: 25px; }
+.tree ul { margin-left: 10px; position: relative; list-style-type: none; padding-left: 0; }
+.tree li { margin: 0; padding: 8px 0 8px 25px; position: relative; }
+.tree li::before { content: ""; position: absolute; top: 0; left: 0; border-left: 2px solid var(--border-color); height: 100%; }
+.tree li::after { content: ""; position: absolute; top: 22px; left: 0; border-top: 2px solid var(--border-color); width: 22px; }
+.tree li:last-child::before { height: 22px; }
+.node-box { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+.node-box:hover { background: #edf2f7; transform: scale(1.02); }
+.gen-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #ebf8ff; color: #2b6cb0; }
+.spouse-container { color: var(--spouse-color); font-weight: 500; }
+.daughters-container { color: var(--daughters-color); font-weight: 400; font-style: italic; }
+.heritage-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; background: white; }
+.heritage-table th { background: #f7fafc; color: #4a5568; text-align: left; padding: 12px; border: 1px solid #e2e8f0; font-weight: 600; }
+.heritage-table td { padding: 12px; border: 1px solid #e2e8f0; vertical-align: top; color: #2d3748; }
+input[type="text"] { width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; }
+label { font-size: 0.9rem; font-weight: 600; color: #4a5568; }
+button { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+button[type="submit"] { background: var(--accent); color: white; }
+button.secondary { background: #e2e8f0; color: #4a5568; }
+"""
+
+def get_nav_bar(active_page):
+    return Div(
+        A("🌳 Family Lineage Tree", href="/", cls="active" if active_page == "tree" else ""),
+        A("📜 Naming & Heritage Story", href="/heritage", cls="active" if active_page == "heritage" else ""),
+        cls="nav-bar"
+    )
+
 def get_spouses_dict():
     try:
         response = supabase.table("family_spouses").select("*").execute()
@@ -124,118 +161,98 @@ def generate_html_tree(parent_id, spouses, daughters):
             
     return list_items
 
+# --- ROUTE 1: THE HOME TREE PAGE ---
 @app.route("/")
 async def get_homepage(request):
     spouses = get_spouses_dict()
     daughters = get_daughters_dict()
     tree_items = generate_html_tree(None, spouses, daughters)
     
-    if len(tree_items) == 0:
-        tree_container = Div("No family records loaded.", cls="tree")
-    else:
-        tree_container = Div(Ul(*tree_items), cls="tree")
+    tree_container = Div("No family records loaded.", cls="tree") if len(tree_items) == 0 else Div(Ul(*tree_items), cls="tree")
         
     layout = Div(
-        # 1. Page Header Hero
+        get_nav_bar("tree"),
         Div(
-            H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
-            P("Interactive Family Lineage & Records"),
-            style="background: var(--primary); color: white; padding: 30px 20px; border-radius: 12px; text-align: center; margin-bottom: 25px;"
-        ),
-        
-        # 2. 👇 NEW FEATURE: Heritage & Background Showcase Panel 👇
-        Div(
-            H2("📜 Family Origins & Heritage", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.4rem;"),
-            P("Rooted deeply in classic Badaga naming tradition, prefixes honor ancestral achievements. When a family elder achieved great respect, leadership, or performed an impactful community feat, their birth name was permanently prefixed with their village, agricultural estate, or monumental achievement."),
-            P("As our foundational patriarch, ", B("Songattae Joghee"), " carries two beautiful historical possibilities passed down through generations:"),
-            
-            Ul(
-                Li(B("The Master of the Monsoon Waters: "), "As an early pioneer or elder (Gowda), he likely designed and constructed a vital stone check-dam ('Songattae') that channeled heavy monsoon water safely into valley farm plots, sustaining village crop yields during relentless misty downpours (Soan)."),
-                Li(B("The Leader from the Misty Ridge: "), "Alternatively, his clan was the very first to successfully clear and homestead that specific wet mountain ridge, establishing himself as the definitive guardian and elder patriarch of that slope."),
-                style="padding-left: 20px; margin-bottom: 20px;"
-            ),
-            
-            H3("How to Read the Ancestor Prefix Block:", style="font-size: 1rem; color: #4a5568; margin-bottom: 10px;"),
-            Table(
-                Tr(Th("Ancestor Name"), Th("Component Breakdown"), Th("Historical Insight")),
-                Tr(
-                    Td(B("Songattae Joghee")),
-                    Td(
-                        Div(B("Songattae: "), "`Soan/Sona` - Monsoon Drizzle  `Gattae` - The Embankment / CheckDam / Ridge"),
-                        Div(B("Joghee: "), "Revered Badaga baseline name (Yogi/Devotion)")
-                    ),
-                    Td("A foundational mountain patriarch celebrated for strategic water-management or initial land-holding along the high misty forest line of Thangadu.")
-                ),
-                cls="heritage-table"
-            ),
-            style="background: #ffffff; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 25px; line-height: 1.6;"
-        ),
-        
-        # 3. Family Tree Framework
-        Div(
-            H2("🌳 Active Lineage Tree Chart", style="color: var(--primary); margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;"),
-            P("Click on any family node box to manage or append spouses and daughters dynamically.", style="color: #718096; font-size: 0.9rem; margin-bottom: 20px;"),
-            tree_container,
-            style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; margin-bottom: 25px;"
-        ),
-        
-        Div(id="modal-placeholder"),
-        
-        # 4. Footer Wrapper
-        Footer(
-            Hr(style="border: 0; border-top: 1px solid #cbd5e0; margin: 40px 0 20px 0;"),
             Div(
-                P("© 2026 Songattae Family. All Rights Reserved.", style="margin: 5px 0; font-weight: 500;"),
-                P("Contacts: santhosh.sundaran@icloud.com | Built with FastHTML & Supabase", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
-                style="text-align: center; padding-bottom: 20px; color: #4a5568;"
-            )
-        ),
-        cls="container",
-        style="max-width: 1200px; margin: 0 auto; padding: 0 15px;"
+                H1("Songattae Family of The Cool, Misty Forest Land Thangadu"),
+                P("Interactive Family Lineage & Records (FastHTML Engine)"),
+                cls="hero-header"
+            ),
+            Div(
+                H2("🌳 Active Lineage Tree Chart", style="color: var(--primary); margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;"),
+                P("Click on any family node box to manage or append spouses and daughters dynamically.", style="color: #718096; font-size: 0.9rem; margin-bottom: 20px;"),
+                tree_container,
+                style="background: white; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; margin-bottom: 25px;"
+            ),
+            Div(id="modal-placeholder"),
+            Footer(
+                Hr(style="border: 0; border-top: 1px solid #cbd5e0; margin: 40px 0 20px 0;"),
+                Div(
+                    P("© 2026 Songattae Family. All Rights Reserved.", style="margin: 5px 0; font-weight: 500;"),
+                    P("Contacts: contact@thangadu.family | Built with FastHTML & Supabase", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
+                    style="text-align: center; padding-bottom: 20px; color: #4a5568;"
+                )
+            ),
+            cls="container"
+        )
     )
     
-    compiled_tree_html = to_xml(layout)
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <title>Thangadu Family Tree & Heritage</title>
-        <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-        <style>
-            :root {{ --primary: #1a365d; --accent: #2b6cb0; --spouse-color: #d63384; --daughters-color: #6b46c1; --border-color: #cbd5e0; }}
-            body {{ font-family: system-ui, sans-serif; background: #f4f7f6; padding: 30px 15px; margin: 0; }}
-            .tree ul {{ margin-left: 10px; position: relative; list-style-type: none; padding-left: 0; }}
-            .tree li {{ margin: 0; padding: 8px 0 8px 25px; position: relative; }}
-            .tree li::before {{ content: ""; position: absolute; top: 0; left: 0; border-left: 2px solid var(--border-color); height: 100%; }}
-            .tree li::after {{ content: ""; position: absolute; top: 22px; left: 0; border-top: 2px solid var(--border-color); width: 22px; }}
-            .tree li:last-child::before {{ height: 22px; }}
-            .node-box {{ display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }}
-            .node-box:hover {{ background: #edf2f7; transform: scale(1.02); }}
-            .gen-badge {{ font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #ebf8ff; color: #2b6cb0; }}
-            .spouse-container {{ color: var(--spouse-color); font-weight: 500; }}
-            .daughters-container {{ color: var(--daughters-color); font-weight: 400; font-style: italic; }}
-            
-            /* Heritage Table Custom Styling */
-            .heritage-table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95rem; }}
-            .heritage-table th {{ background: #f7fafc; color: #4a5568; text-align: left; padding: 12px; border: 1px solid #e2e8f0; font-weight: 600; }}
-            .heritage-table td {{ padding: 12px; border: 1px solid #e2e8f0; vertical-align: top; color: #2d3748; }}
-            
-            input[type="text"] {{ width: 100%; padding: 10px; margin: 8px 0 16px 0; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; }}
-            label {{ font-size: 0.9rem; font-weight: 600; color: #4a5568; }}
-            button {{ padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }}
-            button[type="submit"] {{ background: var(--accent); color: white; }}
-            button.secondary {{ background: #e2e8f0; color: #4a5568; }}
-        </style>
-    </head>
-    <body>
-        {compiled_tree_html}
-    </body>
-    </html>
-    """
+    html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>Thangadu Family Tree</title><script src='https://unpkg.com/htmx.org@1.9.12'></script><style>{SHARED_CSS}</style></head><body>{to_xml(layout)}</body></html>"
     return HTMLResponse(content=html_content, status_code=200)
 
+# --- ROUTE 2: THE DEDICATED HERITAGE STORY PAGE ---
+@app.route("/heritage")
+async def get_heritage_page(request):
+    layout = Div(
+        get_nav_bar("heritage"),
+        Div(
+            Div(
+                H1("Songattae Family Heritage & Origins"),
+                P("Preserving the Naming Lineage Traditions of Thangadu"),
+                cls="hero-header"
+            ),
+            Div(
+                H2("📜 Origins & Naming Heritage", style="color: var(--primary); margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.4rem;"),
+                P("Rooted deeply in classic Badaga naming tradition, prefixes honor ancestral achievements. When a family elder achieved great respect, leadership, or performed an impactful community feat, their birth name was permanently prefixed with their village, agricultural estate, or monumental achievement."),
+                P("As our foundational patriarch, ", B("Songattae Joghee"), " carries two beautiful historical possibilities passed down through generations:"),
+                
+                Ul(
+                    Li(B("The Master of the Monsoon Waters: "), "As an early pioneer or elder (Gowda), he likely designed and constructed a vital stone check-dam ('Songattae') that channeled heavy monsoon water safely into valley farm plots, sustaining village crop yields during relentless misty downpours (Soan)."),
+                    Li(B("The Leader from the Misty Ridge: "), "Alternatively, his clan was the very first to successfully clear and homestead that specific wet mountain ridge, establishing himself as the definitive guardian and elder patriarch of that slope."),
+                    style="padding-left: 20px; margin-bottom: 25px;"
+                ),
+                
+                H3("How to Read the Ancestor Prefix Block:", style="font-size: 1.1rem; color: #4a5568; margin-bottom: 10px;"),
+                Table(
+                    Tr(Th("Ancestor Name"), Th("Component Breakdown"), Th("Historical Insight")),
+                    Tr(
+                        Td(B("Songattae Joghee")),
+                        Td(
+                            Div(B("Songattae: "), "The Monsoon Embankment / Misty Ridge"),
+                            Div(B("Joghee: "), "Revered Badaga baseline name (Yogi/Devotion)")
+                        ),
+                        Td("A foundational mountain patriarch celebrated for strategic water-management or initial land-holding along the high misty forest line of Thangadu.")
+                    ),
+                    cls="heritage-table"
+                ),
+                style="background: #ffffff; padding: 35px; border-radius: 12px; border: 1px solid #e2e8f0; line-height: 1.7; margin-bottom: 25px;"
+            ),
+            Footer(
+                Hr(style="border: 0; border-top: 1px solid #cbd5e0; margin: 40px 0 20px 0;"),
+                Div(
+                    P("© 2026 Songattae Family. All Rights Reserved.", style="margin: 5px 0; font-weight: 500;"),
+                    P("Contacts: contact@thangadu.family | Built with FastHTML & Supabase", style="margin: 5px 0; font-size: 0.9rem; color: #718096;"),
+                    style="text-align: center; padding-bottom: 20px; color: #4a5568;"
+                )
+            ),
+            cls="container"
+        )
+    )
+    
+    html_content = f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>Family Heritage - Thangadu</title><style>{SHARED_CSS}</style></head><body>{to_xml(layout)}</body></html>"
+    return HTMLResponse(content=html_content, status_code=200)
+
+# --- CORE MODAL VIEWS & API ENDPOINTS ---
 @app.route("/edit-spouse-modal/{member_id}")
 async def get_modal_view(request):
     member_id = int(request.path_params["member_id"])
@@ -280,10 +297,7 @@ async def post_save_spouse(request):
     daughters_raw = str(form_data.get("daughters_list", "")).strip()
     
     if spouse_name:
-        supabase.table("family_spouses").upsert({
-            "member_id": member_id, 
-            "spouse_name": spouse_name
-        }).execute()
+        supabase.table("family_spouses").upsert({"member_id": member_id, "spouse_name": spouse_name}).execute()
     else:
         supabase.table("family_spouses").delete().eq("member_id", member_id).execute()
         
